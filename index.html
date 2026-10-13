@@ -63,6 +63,22 @@ input, select, textarea, button { font-family: inherit; }
     0 0 80px rgba(124,184,122,0.04);
 }
 
+/* ─── REAL PHONE: fill the screen ─── */
+@media (max-width: 430px) {
+  html, body { height: 100%; overflow: hidden; background: var(--bg); }
+  body { display: block; padding: 0; }
+  .phone {
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .island { display: none; }
+  .statusbar { display: none; }
+  .bnav { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
+}
+
 /* Dynamic Island */
 .island {
   position: absolute;
@@ -512,8 +528,8 @@ input, select, textarea, button { font-family: inherit; }
 }
 .bn.active { border-top-color: var(--sage); }
 .bn.active .bni, .bn.active .bnl { color: var(--sage); }
-.bni { font-size: 22px; color: var(--t3); transition: color .15s; }
-.bnl { font-size: 9px; color: var(--t3); font-weight: 700; letter-spacing: .3px; transition: color .15s; }
+.bni { font-size: 22px; color: var(--t2); transition: color .15s; }
+.bnl { font-size: 9px; color: var(--t2); font-weight: 700; letter-spacing: .3px; transition: color .15s; }
 
 /* ─── TOAST ─── */
 #toast {
