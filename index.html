@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FieldTrace</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap">
+<style>
+/* ─── TOKENS ─── */
+:root {
+  color-scheme: dark;
+  --bg:     #080C08;
+  --surf:   #111511;
+  --card:   #181E18;
+  --card2:  #1F261F;
+  --card3:  #262E26;
+  --b1:     rgba(124,184,122,0.08);
+  --b2:     rgba(124,184,122,0.14);
+  --sage:   #7CB87A;
+  --sage2:  #5A9658;
+  --sage3:  #3D6B3B;
+  --sage-d: rgba(124,184,122,0.12);
+  --amber:  #FFB347;
+  --red:    #FF5252;
+  --blue:   #64B5F6;
+  --pink:   #FF6B9D;
+  --t1:     #EFF0EC;
+  --t2:     #6B7A6A;
+  --t3:     #303A30;
+  --radius: 14px;
+  --radius-sm: 9px;
+}
+
+/* ─── RESET ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: #181818;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+input, select, textarea, button { font-family: inherit; }
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ─── PHONE SHELL ─── */
+.phone {
+  width: 393px;
+  height: 852px;
+  background: var(--bg);
+  border-radius: 52px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow:
+    0 0 0 10px #1A1A1A,
+    0 0 0 12px #252525,
+    0 50px 140px rgba(0,0,0,0.95),
+    0 0 80px rgba(124,184,122,0.04);
+}
+
+/* Dynamic Island */
+.island {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 34px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 300;
+}
+
+/* Status bar */
+.statusbar {
+  height: 54px;
+  background: var(--surf);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 30px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  flex-shrink: 0;
+  z-index: 100;
+  letter-spacing: .2px;
+}
+.sb-right { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+.sb-battery {
+  width: 22px; height: 11px;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  border-radius: 3px;
+  position: relative;
+  margin-left: 3px;
+}
+.sb-battery::before {
+  content: '';
+  position: absolute;
+  right: -5px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 5px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 0 2px 2px 0;
+}
+.sb-battery::after {
+  content: '';
+  position: absolute;
+  left: 2px; top: 2px; bottom: 2px;
+  width: 75%;
+  background: #7CB87A;
+  border-radius: 1px;
+}
+
+/* ─── SCREENS ─── */
+.screen { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.screen.active { display: flex; }
+.scroll { flex: 1; overflow-y: auto; padding: 16px; }
+
+/* ─── APP BAR ─── */
+.appbar {
+  background: var(--surf);
+  border-bottom: 1px solid var(--b1);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.app-logo { display: flex; align-items: center; gap: 8px; }
+.app-logo-mark {
+  width: 30px; height: 30px;
+  background: linear-gradient(135deg, var(--sage3), var(--sage));
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.app-logo-text { font-size: 17px; font-weight: 900; color: var(--t1); letter-spacing: -.4px; }
+.app-logo-text span { color: var(--sage); }
+.ab-actions { display: flex; align-items: center; gap: 8px; }
+.ab-btn {
+  width: 34px; height: 34px;
+  background: var(--card);
+  border: 1px solid var(--b1);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .12s;
+  position: relative;
+}
+.ab-btn:active { background: var(--card2); }
+.ab-badge {
+  position: absolute; top: -3px; right: -3px;
+  width: 14px; height: 14px;
+  background: var(--red);
+  border-radius: 50%;
+  font-size: 8px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  border: 1.5px solid var(--surf);
+}
+.ab-av {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sage3), var(--sage));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff;
+  cursor: pointer;
+}
+
+/* SUB-APPBAR */
+.subbar {
+  background: var(--surf);
+  border-bottom: 1px solid var(--b1);
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.back-btn {
+  font-size: 26px;
+  color: var(--sage);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+.subbar-title { font-size: 16px; font-weight: 800; color: var(--t1); }
+.subbar-chip {
+  margin-left: auto;
+  font-size: 12px; font-weight: 700;
+  color: var(--sage);
+  background: var(--sage-d);
+  border: 1px solid var(--b2);
+  border-radius: 20px;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: background .12s;
+  white-space: nowrap;
+}
+.subbar-chip:active { background: rgba(124,184,122,0.2); }
+
+/* ─── KPI TILES ─── */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.kpi {
+  border-radius: var(--radius);
+  padding: 15px;
+  position: relative; overflow: hidden;
+  cursor: pointer;
+  transition: transform .12s;
+  min-height: 90px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.kpi:active { transform: scale(0.97); }
+.k-sage { background: linear-gradient(145deg,#203A20,#0E1E0E); }
+.k-amber { background: linear-gradient(145deg,#3A2A10,#201508); }
+.k-blue  { background: linear-gradient(145deg,#102030,#081018); }
+.k-pink  { background: linear-gradient(145deg,#301020,#180810); }
+.k-muted { background: linear-gradient(145deg,#202820,#101610); }
+.kpi-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+.kpi-val { font-size: 26px; font-weight: 900; color: #fff; line-height: 1; font-variant-numeric: tabular-nums; }
+.kpi-lbl { font-size: 10px; color: rgba(255,255,255,0.38); margin-top: 4px; font-weight: 600; letter-spacing: .3px; }
+.kpi-badge {
+  position: absolute; top: 11px; right: 11px;
+  font-size: 9px; font-weight: 800;
+  padding: 2px 7px; border-radius: 20px;
+}
+.kb-g { background: rgba(124,184,122,0.2); color: var(--sage); }
+.kb-a { background: rgba(255,179,71,0.2); color: var(--amber); }
+.kb-r { background: rgba(255,82,82,0.2); color: var(--red); }
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--b1);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.sec-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 13px;
+}
+.sec-title { font-size: 14px; font-weight: 700; color: var(--t1); }
+.sec-act {
+  font-size: 12px; font-weight: 700;
+  color: var(--sage); cursor: pointer;
+  padding: 5px 12px;
+  background: var(--sage-d);
+  border-radius: 20px;
+  transition: background .12s;
+}
+.sec-act:active { background: rgba(124,184,122,0.2); }
+
+/* ─── LIST ROWS ─── */
+.rlist {}
+.rrow {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--b1);
+  cursor: pointer;
+  transition: background .1s;
+  border-radius: 6px;
+}
+.rrow:last-child { border-bottom: none; }
+.rrow:active { background: var(--card2); margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+.rdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rm { flex: 1; min-width: 0; }
+.rt { font-size: 13px; font-weight: 600; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs { font-size: 10.5px; color: var(--t2); margin-top: 2px; }
+.rarr { font-size: 18px; color: var(--t3); flex-shrink: 0; }
+
+/* BADGES */
+.badge { font-size: 9.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; white-space: nowrap; }
+.bg { background: rgba(124,184,122,0.14); color: var(--sage); }
+.ba { background: rgba(255,179,71,0.14); color: var(--amber); }
+.bp { background: rgba(255,82,82,0.14); color: var(--red); }
+.bb { background: rgba(100,181,246,0.14); color: var(--blue); }
+
+/* ─── ALERTS ─── */
+.alert {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 13px; border-radius: var(--radius-sm);
+  border: 1px solid; margin-bottom: 8px;
+  cursor: pointer; transition: opacity .12s;
+}
+.alert:active { opacity: 0.75; }
+.al-w { background: rgba(255,179,71,0.05); border-color: rgba(255,179,71,0.18); }
+.al-r { background: rgba(255,82,82,0.05); border-color: rgba(255,82,82,0.18); }
+.al-g { background: var(--sage-d); border-color: var(--b2); }
+.alert-icon { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+.alert-body { flex: 1; }
+.alert-title { font-size: 12.5px; font-weight: 700; color: var(--t1); }
+.alert-sub { font-size: 10.5px; color: var(--t2); margin-top: 2px; }
+.alert-cta { font-size: 11px; font-weight: 700; color: var(--sage); white-space: nowrap; margin-top: 1px; }
+
+/* ─── FLOW STRIP ─── */
+.flow-strip { display: flex; gap: 8px; margin-bottom: 14px; }
+.fc {
+  flex: 1; border-radius: 11px; padding: 12px;
+  position: relative; overflow: hidden;
+  min-height: 68px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.fc1 { background: linear-gradient(135deg,#203A20,#0E1E0E); }
+.fc2 { background: linear-gradient(135deg,#3A2A10,#201508); }
+.fc3 { background: linear-gradient(135deg,#102030,#081018); }
+.fc-arr { position: absolute; top: 9px; right: 9px; font-size: 13px; opacity: .5; }
+.fc-val { font-size: 14px; font-weight: 900; color: #fff; line-height: 1; font-variant-numeric: tabular-nums; }
+.fc-lbl { font-size: 9px; color: rgba(255,255,255,0.38); margin-top: 2px; font-weight: 600; }
+
+/* ─── SPRAY ITEMS ─── */
+.spray-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 0; border-bottom: 1px solid var(--b1);
+  cursor: pointer; transition: background .1s;
+}
+.spray-item:last-child { border-bottom: none; }
+.spray-item:active { background: var(--card2); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 6px; }
+.spray-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.spray-info { flex: 1; min-width: 0; }
+.spray-prod { font-size: 13px; font-weight: 700; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spray-det { font-size: 10.5px; color: var(--t2); margin-top: 2px; }
+.spray-rei { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: var(--sage-d); color: var(--sage); flex-shrink: 0; }
+
+/* ─── MINI BARS ─── */
+.mini-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+.mini-bar-lbl { font-size: 11px; color: var(--t1); font-weight: 600; width: 76px; flex-shrink: 0; }
+.mini-bar-track { flex: 1; height: 9px; background: var(--card3); border-radius: 4px; overflow: hidden; }
+.mini-bar-fill { height: 100%; border-radius: 4px; }
+.mini-bar-val { font-size: 11px; font-weight: 800; width: 52px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+/* ─── CREW ─── */
+.crew-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--b1);
+}
+.crew-item:last-child { border-bottom: none; }
+.crew-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; flex-shrink: 0;
+}
+.crew-info { flex: 1; min-width: 0; }
+.crew-name { font-size: 13px; font-weight: 700; color: var(--t1); }
+.crew-role { font-size: 10.5px; color: var(--t2); margin-top: 2px; }
+
+/* ─── PROW ─── */
+.prow {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--card2); border-radius: var(--radius-sm);
+  padding: 10px 13px; margin-bottom: 7px;
+}
+.plbl { font-size: 12px; color: var(--t2); }
+.pval { font-size: 12.5px; font-weight: 700; color: var(--t1); font-variant-numeric: tabular-nums; }
+.pval.g { color: var(--sage); }
+.pval.a { color: var(--amber); }
+.pval.r { color: var(--red); }
+
+/* ─── GAP GRID ─── */
+.gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
+.gap-card {
+  background: var(--card2); border: 1px solid var(--b1);
+  border-radius: var(--radius); padding: 14px;
+  cursor: pointer; transition: all .12s;
+}
+.gap-card:active { transform: scale(0.97); background: var(--card3); }
+.gc-icon { font-size: 22px; margin-bottom: 7px; }
+.gc-title { font-size: 12px; font-weight: 800; color: var(--t1); margin-bottom: 3px; }
+.gc-cnt { font-size: 10px; color: var(--t2); margin-bottom: 8px; }
+
+/* ─── FORMS ─── */
+.form-section {
+  background: var(--card); border: 1px solid var(--b1);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+}
+.form-title {
+  font-size: 11px; font-weight: 800; color: var(--sage);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 15px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--b1);
+}
+.field { margin-bottom: 13px; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block; font-size: 10px; font-weight: 700;
+  color: var(--sage); text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 5px;
+}
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--card2); border: 1px solid var(--b1);
+  border-radius: 10px; padding: 11px 13px; color: var(--t1);
+  font-size: 14px; font-weight: 600; outline: none;
+  transition: border-color .15s; -webkit-appearance: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--sage); }
+.field select option { background: var(--card2); }
+.field textarea { min-height: 72px; resize: none; line-height: 1.5; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Variety blocks */
+.var-block {
+  background: var(--card2); border: 1px solid var(--b1);
+  border-radius: 11px; padding: 12px; margin-bottom: 10px;
+  position: relative;
+}
+.var-block-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 11px;
+}
+.var-block-title { font-size: 11px; font-weight: 700; color: var(--t1); }
+.var-remove {
+  width: 22px; height: 22px;
+  background: rgba(255,82,82,0.13); border: none;
+  border-radius: 6px; color: var(--red);
+  cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%; background: var(--sage); border: none;
+  border-radius: 12px; padding: 14px; color: #fff;
+  font-size: 15px; font-weight: 800; cursor: pointer;
+  letter-spacing: .3px; margin-bottom: 9px;
+  transition: background .15s, transform .1s;
+}
+.btn-primary:active { background: var(--sage2); transform: scale(0.99); }
+.btn-secondary {
+  width: 100%; background: transparent; border: 1px solid var(--b2);
+  border-radius: 12px; padding: 12px; color: var(--t2);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  margin-bottom: 9px; transition: background .12s;
+}
+.btn-secondary:active { background: var(--card2); }
+.btn-add-variety {
+  width: 100%; background: var(--sage-d);
+  border: 1px dashed var(--b2); border-radius: 10px;
+  padding: 10px; color: var(--sage); font-size: 13px;
+  font-weight: 700; cursor: pointer; margin-bottom: 13px;
+  transition: background .12s;
+}
+.btn-add-variety:active { background: rgba(124,184,122,0.2); }
+
+/* Attach zone */
+.attach-zone {
+  background: var(--card2); border: 2px dashed var(--b2);
+  border-radius: 11px; padding: 24px;
+  text-align: center; cursor: pointer; transition: border-color .12s;
+}
+.attach-zone:active { border-color: var(--sage); }
+.attach-zone-icon { font-size: 28px; margin-bottom: 7px; }
+.attach-zone-title { font-size: 13px; font-weight: 700; color: var(--t1); }
+.attach-zone-sub { font-size: 11px; color: var(--t2); margin-top: 4px; }
+
+/* ─── SUCCESS SCREEN ─── */
+.success-screen {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  flex: 1; padding: 32px; text-align: center;
+}
+.success-icon { font-size: 60px; margin-bottom: 16px; }
+.success-title { font-size: 22px; font-weight: 900; color: var(--t1); margin-bottom: 8px; }
+.success-sub {
+  font-size: 14px; color: var(--t2); line-height: 1.6;
+  margin-bottom: 28px; max-width: 260px;
+}
+.success-btns { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.btn-inline {
+  background: var(--sage); border: none; border-radius: 12px;
+  padding: 13px 32px; color: #fff; font-size: 14px; font-weight: 800;
+  cursor: pointer; transition: background .15s;
+}
+.btn-inline:active { background: var(--sage2); }
+.btn-inline-sec {
+  background: transparent; border: 1px solid var(--b2);
+  border-radius: 12px; padding: 11px 24px; color: var(--t2);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background .12s;
+}
+.btn-inline-sec:active { background: var(--card2); }
+
+/* ─── DETAIL ─── */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.detail-field {}
+.detail-label {
+  font-size: 10px; font-weight: 700; color: var(--sage);
+  text-transform: uppercase; letter-spacing: .8px; margin-bottom: 4px;
+}
+.detail-value { font-size: 14px; font-weight: 600; color: var(--t1); }
+.detail-value.big { font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.detail-actions { display: flex; gap: 9px; margin-bottom: 13px; }
+.detail-actions .btn-secondary { flex: 1; margin: 0; padding: 11px 8px; font-size: 12px; }
+
+/* ─── BOTTOM NAV ─── */
+.bnav {
+  background: var(--surf); border-top: 1px solid var(--b1);
+  display: flex; padding: 8px 0 26px;
+  flex-shrink: 0;
+}
+.bn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px; cursor: pointer;
+  padding: 4px 0;
+  border-top: 2px solid transparent;
+  transition: all .15s;
+}
+.bn.active { border-top-color: var(--sage); }
+.bn.active .bni, .bn.active .bnl { color: var(--sage); }
+.bni { font-size: 22px; color: var(--t3); transition: color .15s; }
+.bnl { font-size: 9px; color: var(--t3); font-weight: 700; letter-spacing: .3px; transition: color .15s; }
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed; bottom: 110px; left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--card3); border: 1px solid var(--b2);
+  color: var(--t1); padding: 9px 18px; border-radius: 30px;
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+  z-index: 1000; opacity: 0;
+  transition: all .2s; white-space: nowrap; pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── GREETING ─── */
+.greeting { margin-bottom: 18px; }
+.greet-sub { font-size: 12px; color: var(--t2); margin-bottom: 2px; }
+.greet-main { font-size: 22px; font-weight: 900; color: var(--t1); letter-spacing: -.4px; }
+.greet-farm { font-size: 11px; color: var(--sage); margin-top: 3px; font-weight: 600; }
+
+/* Revenue card */
+.rev-big { font-size: 40px; font-weight: 900; color: var(--t1); letter-spacing: -1.5px; line-height: 1; font-variant-numeric: tabular-nums; }
+.rev-row { display: flex; gap: 20px; padding-top: 12px; border-top: 1px solid var(--b1); margin-top: 12px; }
+.rev-stat-lbl { font-size: 11px; color: var(--t2); margin-bottom: 2px; }
+.rev-stat-val { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 40px 20px; text-align: center;
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .5; }
+.empty-title { font-size: 15px; font-weight: 700; color: var(--t1); margin-bottom: 6px; }
+.empty-sub { font-size: 12px; color: var(--t2); line-height: 1.5; max-width: 220px; }
+
+/* ─── SETTINGS (removed) — light spacer ─── */
+.spacer { height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="island"></div>
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="sb-right">
+      <span>●●●</span>
+      <span>WiFi</span>
+      <span style="font-size:12px;">📶</span>
+      <div class="sb-battery"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       HOME
+  ══════════════════════════════ -->
+  <div class="screen active" id="s-home">
+    <div class="appbar">
+      <div class="app-logo">
+        <div class="app-logo-mark">🌿</div>
+        <div class="app-logo-text">Field<span>Trace</span></div>
+      </div>
+      <div class="ab-actions">
+        <div class="ab-btn" onclick="go('notifications')">🔔<div class="ab-badge" id="home-notif-badge">2</div></div>
+        <div class="ab-av" onclick="go('settings')">L</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="greeting">
+        <div class="greet-sub">Good morning,</div>
+        <div class="greet-main">Liam O'Neill 👋</div>
+        <div class="greet-farm">The Good Grape Company · Sylvania, GA</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi k-sage" onclick="go('harvest')">
+          <div class="kpi-badge kb-g">+12%</div>
+          <span class="kpi-icon">🌾</span>
+          <div class="kpi-val" id="home-kpi-lbs">—</div>
+          <div class="kpi-lbl">Lbs harvested</div>
+        </div>
+        <div class="kpi k-amber" onclick="go('harvest')">
+          <div class="kpi-badge kb-g">+8%</div>
+          <span class="kpi-icon">📦</span>
+          <div class="kpi-val" id="home-kpi-boxes">—</div>
+          <div class="kpi-lbl">Boxes packed</div>
+        </div>
+        <div class="kpi k-blue" onclick="go('gap')">
+          <div class="kpi-badge kb-a" id="home-kpi-gap-badge">2</div>
+          <span class="kpi-icon">✅</span>
+          <div class="kpi-val" id="home-kpi-gap">—</div>
+          <div class="kpi-lbl">GAP records</div>
+        </div>
+        <div class="kpi k-pink" onclick="go('crew')">
+          <span class="kpi-icon">👷</span>
+          <div class="kpi-val" id="home-kpi-crew">—</div>
+          <div class="kpi-lbl">Crew today</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr">
+          <div class="sec-title">Harvest Flow</div>
+          <div class="sec-act" onclick="go('harvest')">View all →</div>
+        </div>
+        <div class="flow-strip">
+          <div class="fc fc1"><div class="fc-arr">↙</div><div class="fc-val" id="home-flow-h">—</div><div class="fc-lbl">Harvested</div></div>
+          <div class="fc fc2"><div class="fc-arr">↗</div><div class="fc-val">36,800</div><div class="fc-lbl">Shipped</div></div>
+          <div class="fc fc3"><div class="fc-arr">↔</div><div class="fc-val" id="home-flow-c">—</div><div class="fc-lbl">In Cooler</div></div>
+        </div>
+        <svg width="100%" height="50" viewBox="0 0 340 50" preserveAspectRatio="none">
+          <rect x="0"   y="32" width="22" height="18" rx="3" fill="rgba(124,184,122,0.16)"/>
+          <rect x="28"  y="24" width="22" height="26" rx="3" fill="rgba(124,184,122,0.24)"/>
+          <rect x="56"  y="14" width="22" height="36" rx="3" fill="rgba(124,184,122,0.36)"/>
+          <rect x="84"  y="22" width="22" height="28" rx="3" fill="rgba(124,184,122,0.28)"/>
+          <rect x="112" y="6"  width="22" height="44" rx="3" fill="var(--sage)"/>
+          <rect x="140" y="2"  width="22" height="48" rx="3" fill="url(#sg)"/>
+          <rect x="168" y="10" width="22" height="40" rx="3" fill="rgba(124,184,122,0.52)"/>
+          <rect x="196" y="18" width="22" height="32" rx="3" fill="rgba(124,184,122,0.36)"/>
+          <rect x="224" y="8"  width="22" height="42" rx="3" fill="rgba(124,184,122,0.48)"/>
+          <rect x="252" y="0"  width="22" height="50" rx="3" fill="url(#sg)"/>
+          <rect x="280" y="14" width="22" height="36" rx="3" fill="rgba(124,184,122,0.44)"/>
+          <rect x="308" y="4"  width="22" height="46" rx="3" fill="rgba(124,184,122,0.6)"/>
+          <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7CB87A"/>
+              <stop offset="100%" stop-color="#3D6B3B"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--t3);margin-top:5px;">
+          <span>Aug 20</span><span>Sep 1</span><span>Sep 7</span><span>Sep 14</span><span>Sep 23</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">Season Revenue</div></div>
+        <div style="display:flex;align-items:flex-end;gap:12px;">
+          <div class="rev-big">$124k</div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--sage);">+12% ↑</div>
+            <div style="font-size:11px;color:var(--t2);">Season to date</div>
+          </div>
+        </div>
+        <div class="rev-row">
+          <div><div class="rev-stat-lbl">Revenue</div><div class="rev-stat-val" style="color:var(--sage);">$124,000</div></div>
+          <div><div class="rev-stat-lbl">Labor</div><div class="rev-stat-val" style="color:var(--amber);">$28,400</div></div>
+          <div><div class="rev-stat-lbl">Net</div><div class="rev-stat-val" style="color:var(--sage);">$95,600</div></div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><div class="sec-title">Alerts</div><div class="sec-act" onclick="go('gap')">GAP →</div></div>
+      <div class="alert al-r" onclick="go('gap')">
+        <div class="alert-icon">🧹</div>
+        <div class="alert-body">
+          <div class="alert-title">Cleaning log overdue — 17 days</div>
+          <div class="alert-sub">Last entry Aug 28 · required weekly</div>
+        </div>
+        <div class="alert-cta">Fix →</div>
+      </div>
+      <div class="alert al-w" onclick="go('gap')">
+        <div class="alert-icon">🌡️</div>
+        <div class="alert-body">
+          <div class="alert-title">Cooler A above threshold</div>
+          <div class="alert-sub">36°F vs 34°F set point</div>
+        </div>
+        <div class="alert-cta">Review →</div>
+      </div>
+      <div class="alert al-g">
+        <div class="alert-icon">📋</div>
+        <div class="alert-body">
+          <div class="alert-title">GAP audit in 19 days — Oct 3</div>
+          <div class="alert-sub">2 items outstanding</div>
+        </div>
+        <div class="alert-cta">Prep →</div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SPRAY LIST
+  ══════════════════════════════ -->
+  <div class="screen" id="s-spray">
+    <div class="appbar">
+      <div class="app-logo">
+        <div class="app-logo-mark">🌿</div>
+        <div class="app-logo-text">Field<span>Trace</span></div>
+      </div>
+      <div class="ab-actions">
+        <div class="ab-btn" onclick="T('🔔 No alerts')">🔔</div>
+        <div class="ab-av" onclick="go('settings')">L</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="kpi-grid" style="margin-top:4px;">
+        <div class="kpi k-sage"><span class="kpi-icon">💧</span><div class="kpi-val" id="spray-kpi-apps">—</div><div class="kpi-lbl">Applications</div></div>
+        <div class="kpi k-muted"><span class="kpi-icon">🌿</span><div class="kpi-val">115</div><div class="kpi-lbl">Acres treated</div></div>
+        <div class="kpi k-blue"><span class="kpi-icon">🧴</span><div class="kpi-val">4</div><div class="kpi-lbl">Products</div></div>
+        <div class="kpi k-amber"><span class="kpi-icon">⏱️</span><div class="kpi-val" style="color:var(--sage);">0</div><div class="kpi-lbl">Active REIs</div></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr">
+          <div class="sec-title">Application Log</div>
+          <div class="sec-act" onclick="go('spray-add')">+ Add Record</div>
+        </div>
+        <div id="spray-list">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">Product Inventory</div></div>
+        <div class="rlist">
+          <div class="rrow"><div class="rdot" style="background:var(--pink);"></div><div class="rm"><div class="rt">Roundup (Glyphosate)</div><div class="rs">2.5 gal · EPA #524-445 · SDS on file</div></div><span class="badge bb">EPA</span></div>
+          <div class="rrow"><div class="rdot" style="background:var(--amber);"></div><div class="rm"><div class="rt">Captan 80WDG</div><div class="rs">8 lbs · EPA #10182-390 · SDS on file</div></div><span class="badge bb">EPA</span></div>
+          <div class="rrow"><div class="rdot" style="background:var(--sage);"></div><div class="rm"><div class="rt">Kocide 3000 Copper</div><div class="rs">4 lbs · EPA #352-828 · SDS on file</div></div><span class="badge bb">EPA</span></div>
+          <div class="rrow"><div class="rdot" style="background:var(--sage2);"></div><div class="rm"><div class="rt">Pristine WG</div><div class="rs">1.5 lbs · EPA #7969-305 · SDS on file</div></div><span class="badge bb">EPA</span></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- SPRAY ADD -->
+  <div class="screen" id="s-spray-add">
+    <div class="subbar">
+      <div class="back-btn" onclick="go('spray')">‹</div>
+      <div class="subbar-title">Add Spray Record</div>
+    </div>
+    <div class="scroll">
+      <div class="form-section">
+        <div class="form-title">Application Details</div>
+        <div class="field"><label>Date</label><input type="date" id="spray-f-date"></div>
+        <div class="field"><label>Product Name</label><input type="text" id="spray-f-product" placeholder="e.g. Roundup (Glyphosate)"></div>
+        <div class="field-row">
+          <div class="field"><label>EPA Reg #</label><input type="text" id="spray-f-epa" placeholder="524-445"></div>
+          <div class="field"><label>REI (hours)</label><input type="number" id="spray-f-rei" placeholder="4"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Block / Area</label><input type="text" id="spray-f-block" placeholder="Block 1 North"></div>
+          <div class="field"><label>Acres Treated</label><input type="number" id="spray-f-acres" placeholder="25"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Rate Applied</label><input type="text" id="spray-f-rate" placeholder="2 oz/acre"></div>
+          <div class="field"><label>Total Volume</label><input type="text" id="spray-f-vol" placeholder="50 oz"></div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-title">Applicator & Conditions</div>
+        <div class="field"><label>Applicator Name</label><input type="text" id="spray-f-applicator" placeholder="Liam O'Neill"></div>
+        <div class="field-row">
+          <div class="field"><label>Temp (°F)</label><input type="number" id="spray-f-temp" placeholder="78"></div>
+          <div class="field"><label>Wind (mph)</label><input type="number" id="spray-f-wind" placeholder="6"></div>
+        </div>
+        <div class="field"><label>Wind Direction</label>
+          <select id="spray-f-dir"><option>-- Select --</option><option>N</option><option>NE</option><option>E</option><option>SE</option><option>S</option><option>SW</option><option>W</option><option>NW</option></select>
+        </div>
+        <div class="field"><label>Notes</label><textarea id="spray-f-notes" placeholder="Additional notes about this application…"></textarea></div>
+      </div>
+      <button class="btn-primary" onclick="saveSpray()">💾 Save Spray Record</button>
+      <button class="btn-secondary" onclick="go('spray')">Cancel</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- SPRAY SUCCESS -->
+  <div class="screen" id="s-spray-success">
+    <div class="subbar"><div class="back-btn" onclick="go('spray')">‹</div><div class="subbar-title">Saved</div></div>
+    <div class="success-screen">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Record Saved!</div>
+      <div class="success-sub">Spray application logged and added to your GAP compliance record.</div>
+      <div class="success-btns">
+        <button class="btn-inline" onclick="go('spray')">Back to Spray Log</button>
+        <button class="btn-inline-sec" onclick="go('spray-add')">+ Add Another</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPRAY DETAIL -->
+  <div class="screen" id="s-spray-detail">
+    <div class="subbar">
+      <div class="back-btn" onclick="go('spray')">‹</div>
+      <div class="subbar-title" id="spray-detail-title">Spray Record</div>
+    </div>
+    <div class="scroll">
+      <div class="form-section">
+        <div class="form-title">Application Record</div>
+        <div class="detail-grid" id="spray-detail-grid"></div>
+      </div>
+      <div class="detail-actions">
+        <button class="btn-secondary" onclick="T('📄 SDS document opened')">📄 View SDS</button>
+        <button class="btn-secondary" onclick="T('🏷️ EPA label opened')">🏷️ EPA Label</button>
+      </div>
+      <button class="btn-secondary" onclick="go('spray')">← Back to Log</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       HARVEST LIST
+  ══════════════════════════════ -->
+  <div class="screen" id="s-harvest">
+    <div class="appbar">
+      <div class="app-logo">
+        <div class="app-logo-mark">🌿</div>
+        <div class="app-logo-text">Field<span>Trace</span></div>
+      </div>
+      <div class="ab-actions">
+        <div class="ab-btn" onclick="T('🔔 No alerts')">🔔</div>
+        <div class="ab-av" onclick="go('settings')">L</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="kpi-grid" style="margin-top:4px;">
+        <div class="kpi k-sage"><span class="kpi-icon">🌾</span><div class="kpi-val" id="harvest-kpi-lbs">—</div><div class="kpi-lbl">Total lbs</div></div>
+        <div class="kpi k-amber"><span class="kpi-icon">📦</span><div class="kpi-val" id="harvest-kpi-boxes">—</div><div class="kpi-lbl">20lb boxes</div></div>
+        <div class="kpi k-muted"><span class="kpi-icon">🫙</span><div class="kpi-val" id="harvest-kpi-flats">—</div><div class="kpi-lbl">Flats</div></div>
+        <div class="kpi k-blue"><span class="kpi-icon">📅</span><div class="kpi-val" id="harvest-kpi-days">—</div><div class="kpi-lbl">Harvest days</div></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr">
+          <div class="sec-title">Daily Harvest Log</div>
+          <div class="sec-act" onclick="go('harvest-add')">+ Add Record</div>
+        </div>
+        <div id="harvest-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">By Variety</div></div>
+        <div id="harvest-variety-bars"></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- HARVEST ADD -->
+  <div class="screen" id="s-harvest-add">
+    <div class="subbar"><div class="back-btn" onclick="go('harvest')">‹</div><div class="subbar-title">Add Harvest Record</div></div>
+    <div class="scroll">
+      <div class="form-section">
+        <div class="form-title">Harvest Details</div>
+        <div class="field"><label>Date</label><input type="date" id="harv-f-date"></div>
+        <div class="field-row">
+          <div class="field"><label>Field / Block</label><input type="text" id="harv-f-block" placeholder="Block 1"></div>
+          <div class="field"><label># Pickers</label><input type="number" id="harv-f-pickers" placeholder="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Avg Hours</label><input type="number" id="harv-f-hours" placeholder="6" step="0.5"></div>
+          <div class="field"><label>Weather</label><input type="text" id="harv-f-weather" placeholder="Sunny 82°F"></div>
+        </div>
+        <div class="field"><label>Notes</label><textarea id="harv-f-notes" placeholder="Notes about this harvest day…"></textarea></div>
+      </div>
+      <div class="form-section">
+        <div class="form-title">Varieties Picked</div>
+        <div id="variety-rows">
+          <div class="var-block" data-var="0">
+            <div class="var-block-hdr"><div class="var-block-title">Variety 1</div></div>
+            <div class="field"><label>Variety Name</label><input type="text" class="var-name" placeholder="Paulk"></div>
+            <div class="field-row">
+              <div class="field"><label>Lbs</label><input type="number" class="var-lbs" placeholder="0"></div>
+              <div class="field"><label>20lb Boxes</label><input type="number" class="var-boxes" placeholder="0"></div>
+            </div>
+            <div class="field"><label>Flats</label><input type="number" class="var-flats" placeholder="0"></div>
+          </div>
+        </div>
+        <button class="btn-add-variety" onclick="addVariety()">+ Add Another Variety</button>
+      </div>
+      <button class="btn-primary" onclick="saveHarvest()">💾 Save Harvest Record</button>
+      <button class="btn-secondary" onclick="go('harvest')">Cancel</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- HARVEST SUCCESS -->
+  <div class="screen" id="s-harvest-success">
+    <div class="subbar"><div class="back-btn" onclick="go('harvest')">‹</div><div class="subbar-title">Saved</div></div>
+    <div class="success-screen">
+      <div class="success-icon">🌾</div>
+      <div class="success-title">Record Saved!</div>
+      <div class="success-sub">Harvest record logged and added to your season summary.</div>
+      <div class="success-btns">
+        <button class="btn-inline" onclick="go('harvest')">Back to Harvest</button>
+        <button class="btn-inline-sec" onclick="go('harvest-add')">+ Add Another Day</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HARVEST DETAIL -->
+  <div class="screen" id="s-harvest-detail">
+    <div class="subbar">
+      <div class="back-btn" onclick="go('harvest')">‹</div>
+      <div class="subbar-title" id="harv-detail-title">Harvest Record</div>
+    </div>
+    <div class="scroll">
+      <div class="form-section">
+        <div class="form-title">Day Summary</div>
+        <div class="detail-grid" id="harv-detail-grid"></div>
+      </div>
+      <div class="form-section" id="harv-detail-varieties"></div>
+      <div class="detail-actions">
+        <button class="btn-secondary" onclick="T('✏️ Edit mode coming soon')">✏️ Edit</button>
+        <button class="btn-secondary" style="color:var(--red);border-color:rgba(255,82,82,0.2);" onclick="deleteHarvest()">🗑️ Delete</button>
+      </div>
+      <button class="btn-secondary" onclick="go('harvest')">← Back to Log</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       GAP
+  ══════════════════════════════ -->
+  <div class="screen" id="s-gap">
+    <div class="appbar">
+      <div class="app-logo">
+        <div class="app-logo-mark">🌿</div>
+        <div class="app-logo-text">Field<span>Trace</span></div>
+      </div>
+      <div class="ab-actions">
+        <div class="ab-btn" onclick="T('🔔 No alerts')">🔔</div>
+        <div class="ab-av" onclick="go('settings')">L</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="kpi-grid" style="margin-top:4px;">
+        <div class="kpi k-sage"><span class="kpi-icon">✅</span><div class="kpi-val" id="gap-kpi-total">—</div><div class="kpi-lbl">Total records</div></div>
+        <div class="kpi k-muted"><span class="kpi-icon">📎</span><div class="kpi-val">8</div><div class="kpi-lbl">Docs attached</div></div>
+        <div class="kpi k-pink"><div class="kpi-badge kb-r">⚠️</div><span class="kpi-icon">🚨</span><div class="kpi-val" style="color:var(--red);">2</div><div class="kpi-lbl">Need attention</div></div>
+        <div class="kpi k-amber"><span class="kpi-icon">📅</span><div class="kpi-val" style="color:var(--amber);">19</div><div class="kpi-lbl">Days to audit</div></div>
+      </div>
+
+      <div class="sec-hdr">
+        <div class="sec-title">Compliance Sections</div>
+        <div class="sec-act" onclick="T('📊 GAP report generating…')">📊 Export</div>
+      </div>
+      <div class="gap-grid">
+        <div class="gap-card" onclick="go('gap-section-pest')"><div class="gc-icon">🐛</div><div class="gc-title">Pest Control</div><div class="gc-cnt" id="gc-cnt-pest">4 records</div><span class="badge bg">Pass ✓</span></div>
+        <div class="gap-card" onclick="go('gap-add')"><div class="gc-icon">🧹</div><div class="gc-title">Cleaning</div><div class="gc-cnt">6 records · Aug 28</div><span class="badge bp">Overdue</span></div>
+        <div class="gap-card" onclick="go('gap-section-cooler')"><div class="gc-icon">🌡️</div><div class="gc-title">Cooler Temp</div><div class="gc-cnt">18 records · Warning</div><span class="badge ba">Warning</span></div>
+        <div class="gap-card" onclick="go('gap-section-water')"><div class="gc-icon">💧</div><div class="gc-title">Water Testing</div><div class="gc-cnt">2 records · Lab on file</div><span class="badge bg">Pass ✓</span></div>
+        <div class="gap-card" onclick="go('gap-section-equip')"><div class="gc-icon">🔧</div><div class="gc-title">Equipment</div><div class="gc-cnt">5 records</div><span class="badge bg">Pass ✓</span></div>
+        <div class="gap-card" onclick="go('gap-section-harvest')"><div class="gc-icon">🌾</div><div class="gc-title">Harvest GAP</div><div class="gc-cnt">3 records · Released</div><span class="badge bg">Pass ✓</span></div>
+        <div class="gap-card" onclick="go('gap-section-visitor')"><div class="gc-icon">📋</div><div class="gc-title">Visitor Log</div><div class="gc-cnt">2 records · Sep 8</div><span class="badge bg">Pass ✓</span></div>
+        <div class="gap-card" onclick="T('📎 8 documents on file')"><div class="gc-icon">📎</div><div class="gc-title">Documents</div><div class="gc-cnt">8 files attached</div><span class="badge bb">On File</span></div>
+      </div>
+
+      <div class="sec-hdr"><div class="sec-title">Alerts</div></div>
+      <div class="alert al-r" onclick="go('gap-add')">
+        <div class="alert-icon">🧹</div>
+        <div class="alert-body"><div class="alert-title">Cleaning log overdue</div><div class="alert-sub">17 days · tap to log now</div></div>
+        <div class="alert-cta">Fix →</div>
+      </div>
+      <div class="alert al-w">
+        <div class="alert-icon">🌡️</div>
+        <div class="alert-body"><div class="alert-title">Cooler A above threshold</div><div class="alert-sub">36°F vs 34°F set</div></div>
+        <div class="alert-cta">Review →</div>
+      </div>
+      <div class="alert al-g">
+        <div class="alert-icon">💧</div>
+        <div class="alert-body"><div class="alert-title">Water test due in 14 days</div><div class="alert-sub">Schedule GA State Lab</div></div>
+        <div class="alert-cta">Schedule →</div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- GAP SECTION -->
+  <div class="screen" id="s-gap-section">
+    <div class="subbar">
+      <div class="back-btn" onclick="go('gap')">‹</div>
+      <div class="subbar-title" id="gap-section-title">Section</div>
+      <div class="subbar-chip" onclick="go('gap-add')">+ Add</div>
+    </div>
+    <div class="scroll">
+      <div class="card" style="display:flex;align-items:center;gap:16px;padding:18px;">
+        <div style="font-size:38px;" id="gap-section-icon">🐛</div>
+        <div>
+          <div style="font-size:18px;font-weight:900;color:var(--sage);" id="gap-section-status">Pass ✓</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:3px;" id="gap-section-meta">4 records · Last Sep 10</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">Records</div></div>
+        <div class="rlist" id="gap-section-list"></div>
+      </div>
+      <button class="btn-primary" onclick="go('gap-add')">+ Add New Record</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- GAP ADD -->
+  <div class="screen" id="s-gap-add">
+    <div class="subbar"><div class="back-btn" onclick="go('gap')">‹</div><div class="subbar-title">Add GAP Record</div></div>
+    <div class="scroll">
+      <div class="form-section">
+        <div class="form-title">Record Details</div>
+        <div class="field"><label>Section</label>
+          <select id="gap-f-section">
+            <option>Pest Control</option>
+            <option selected>Cleaning Schedule</option>
+            <option>Cooler Temp</option>
+            <option>Water Testing</option>
+            <option>Equipment</option>
+            <option>Harvest GAP</option>
+            <option>Visitor Log</option>
+          </select>
+        </div>
+        <div class="field"><label>Date</label><input type="date" id="gap-f-date"></div>
+        <div class="field"><label>Description</label><input type="text" id="gap-f-desc" placeholder="e.g. Full facility cleaning — pack house"></div>
+        <div class="field"><label>Completed By</label><input type="text" id="gap-f-by" placeholder="Liam O'Neill"></div>
+        <div class="field"><label>Result / Status</label>
+          <select id="gap-f-result">
+            <option>Pass ✓</option>
+            <option>Scheduled</option>
+            <option>Needs Follow-up</option>
+            <option>Fail</option>
+          </select>
+        </div>
+        <div class="field"><label>Notes</label><textarea id="gap-f-notes" placeholder="Notes, observations, or corrective actions…"></textarea></div>
+      </div>
+      <div class="form-section">
+        <div class="form-title">Attach Document</div>
+        <div class="attach-zone" onclick="T('📎 File picker: attach photo, PDF, or document')">
+          <div class="attach-zone-icon">📎</div>
+          <div class="attach-zone-title">Tap to attach document</div>
+          <div class="attach-zone-sub">Photo, PDF, or file from your device</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveGAP()">💾 Save GAP Record</button>
+      <button class="btn-secondary" onclick="go('gap')">Cancel</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- GAP SUCCESS -->
+  <div class="screen" id="s-gap-success">
+    <div class="subbar"><div class="back-btn" onclick="go('gap')">‹</div><div class="subbar-title">Saved</div></div>
+    <div class="success-screen">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Record Saved!</div>
+      <div class="success-sub">GAP compliance record logged and counted toward your audit readiness.</div>
+      <div class="success-btns">
+        <button class="btn-inline" onclick="go('gap')">Back to GAP</button>
+        <button class="btn-inline-sec" onclick="go('gap-add')">+ Add Another</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       CREW
+  ══════════════════════════════ -->
+  <div class="screen" id="s-crew">
+    <div class="appbar">
+      <div class="app-logo">
+        <div class="app-logo-mark">🌿</div>
+        <div class="app-logo-text">Field<span>Trace</span></div>
+      </div>
+      <div class="ab-actions">
+        <div class="ab-btn" onclick="T('🔔 No alerts')">🔔</div>
+        <div class="ab-av" onclick="go('settings')">L</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="kpi-grid" style="margin-top:4px;">
+        <div class="kpi k-sage"><span class="kpi-icon">👥</span><div class="kpi-val">28</div><div class="kpi-lbl">Total</div></div>
+        <div class="kpi k-muted"><span class="kpi-icon">✅</span><div class="kpi-val" style="color:var(--sage);">24</div><div class="kpi-lbl">Active today</div></div>
+        <div class="kpi k-amber"><span class="kpi-icon">💰</span><div class="kpi-val">$0.82</div><div class="kpi-lbl">Cost/lb</div></div>
+        <div class="kpi k-blue"><span class="kpi-icon">⏱️</span><div class="kpi-val">6.0</div><div class="kpi-lbl">Avg hours</div></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr">
+          <div class="sec-title">Employees</div>
+          <div class="sec-act" onclick="T('+ New employee profile coming soon')">+ Add</div>
+        </div>
+        <div class="crew-item"><div class="crew-av" style="background:linear-gradient(135deg,var(--sage3),var(--sage));">L</div><div class="crew-info"><div class="crew-name">Liam O'Neill</div><div class="crew-role">Farm Manager · Salary</div></div><span class="badge bg" style="margin-left:auto;">Active</span></div>
+        <div class="crew-item"><div class="crew-av" style="background:linear-gradient(135deg,#1A2A5A,#5A82BB);">J</div><div class="crew-info"><div class="crew-name">John Martinez</div><div class="crew-role">Crew Leader · $15.00/hr</div></div><span class="badge bg" style="margin-left:auto;">Active</span></div>
+        <div class="crew-item"><div class="crew-av" style="background:linear-gradient(135deg,#3A1A30,#8A5A7A);">M</div><div class="crew-info"><div class="crew-name">Maria Lopez</div><div class="crew-role">Field Worker · $1.20/box</div></div><span class="badge bg" style="margin-left:auto;">Active</span></div>
+        <div class="crew-item"><div class="crew-av" style="background:linear-gradient(135deg,#2A3A1A,#6A8A4A);">C</div><div class="crew-info"><div class="crew-name">Carlos Rivera</div><div class="crew-role">Field Worker · $1.20/box</div></div><span class="badge bg" style="margin-left:auto;">Active</span></div>
+        <div class="crew-item"><div class="crew-av" style="background:linear-gradient(135deg,#3A2A1A,#8A6A3A);">A</div><div class="crew-info"><div class="crew-name">Ana Garcia</div><div class="crew-role">Field Worker · $1.20/box</div></div><span class="badge bg" style="margin-left:auto;">Active</span></div>
+        <div class="crew-item"><div class="crew-av" style="background:linear-gradient(135deg,#1A3A3A,#3A8A8A);">D</div><div class="crew-info"><div class="crew-name">Diego Reyes</div><div class="crew-role">Supervisor · $18.50/hr</div></div><span class="badge bg" style="margin-left:auto;">Active</span></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">Today's Labor — Sep 14</div></div>
+        <div class="prow"><span class="plbl">Pickers on site</span><span class="pval g">24</span></div>
+        <div class="prow"><span class="plbl">Supervisors</span><span class="pval">3</span></div>
+        <div class="prow"><span class="plbl">Estimated labor cost</span><span class="pval a">$3,240</span></div>
+        <div class="prow"><span class="plbl">Cost per lb</span><span class="pval g">$0.82</span></div>
+        <div class="prow"><span class="plbl">Avg hours worked</span><span class="pval">6.0 hrs</span></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">Training Status</div></div>
+        <div class="rlist">
+          <div class="rrow"><div class="rdot" style="background:var(--sage);"></div><div class="rm"><div class="rt">Food Safety (FSMA)</div><div class="rs">28 / 28 trained</div></div><span class="badge bg">Done</span></div>
+          <div class="rrow"><div class="rdot" style="background:var(--sage);"></div><div class="rm"><div class="rt">Pesticide Safety</div><div class="rs">6 / 6 certified</div></div><span class="badge bg">Done</span></div>
+          <div class="rrow"><div class="rdot" style="background:var(--amber);"></div><div class="rm"><div class="rt">GAP Worker Training</div><div class="rs">22 / 28 · 6 pending</div></div><span class="badge ba">Pending</span></div>
+          <div class="rrow"><div class="rdot" style="background:var(--sage);"></div><div class="rm"><div class="rt">First Aid / CPR</div><div class="rs">4 / 4 supervisors</div></div><span class="badge bg">Done</span></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       NOTIFICATIONS
+  ══════════════════════════════ -->
+  <div class="screen" id="s-notifications">
+    <div class="subbar"><div class="back-btn" onclick="go('home')">‹</div><div class="subbar-title">Notifications</div></div>
+    <div class="scroll">
+      <div class="alert al-r" style="margin-top:4px;" onclick="go('gap')">
+        <div class="alert-icon">🧹</div>
+        <div class="alert-body"><div class="alert-title">Cleaning log overdue — 17 days</div><div class="alert-sub">Last entry Aug 28 · required weekly · Tap to log now</div></div>
+        <div class="alert-cta">Fix →</div>
+      </div>
+      <div class="alert al-w" onclick="go('gap')">
+        <div class="alert-icon">🌡️</div>
+        <div class="alert-body"><div class="alert-title">Cooler A above threshold</div><div class="alert-sub">Currently 36°F vs 34°F set point · Sep 14 8:03am</div></div>
+        <div class="alert-cta">Review →</div>
+      </div>
+      <div class="alert al-g">
+        <div class="alert-icon">📋</div>
+        <div class="alert-body"><div class="alert-title">GAP audit in 19 days — Oct 3</div><div class="alert-sub">2 items outstanding · Schedule pre-audit walkthrough</div></div>
+        <div class="alert-cta">Prep →</div>
+      </div>
+      <div class="alert al-g">
+        <div class="alert-icon">💧</div>
+        <div class="alert-body"><div class="alert-title">Water test due in 14 days</div><div class="alert-sub">Schedule GA State Lab · Last test Aug 15</div></div>
+        <div class="alert-cta">Schedule →</div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SETTINGS
+  ══════════════════════════════ -->
+  <div class="screen" id="s-settings">
+    <div class="subbar"><div class="back-btn" onclick="go('home')">‹</div><div class="subbar-title">Account</div></div>
+    <div class="scroll">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;padding:18px;background:var(--card);border:1px solid var(--b1);border-radius:var(--radius);">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--sage3),var(--sage));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0;">L</div>
+        <div>
+          <div style="font-size:17px;font-weight:800;color:var(--t1);">Liam O'Neill</div>
+          <div style="font-size:12px;color:var(--sage);margin-top:2px;">Farm Manager</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:1px;">The Good Grape Company · Sylvania, GA</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">Farm Profile</div></div>
+        <div class="prow"><span class="plbl">Farm Name</span><span class="pval">The Good Grape Co.</span></div>
+        <div class="prow"><span class="plbl">Location</span><span class="pval">Sylvania, GA</span></div>
+        <div class="prow"><span class="plbl">Acreage</span><span class="pval">120 acres</span></div>
+        <div class="prow"><span class="plbl">GAP Certification</span><span class="pval g">Active ✓</span></div>
+        <div class="prow"><span class="plbl">Audit Date</span><span class="pval a">Oct 3, 2026</span></div>
+        <div class="prow"><span class="plbl">USDA Buyer</span><span class="pval">Certified</span></div>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">Demo Data</div></div>
+        <button class="btn-primary" onclick="loadSampleData()">↺ Reset Demo Data</button>
+        <button class="btn-secondary" style="color:var(--red);border-color:rgba(255,82,82,0.2);" onclick="clearAll()">🗑️ Clear All Records</button>
+      </div>
+
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">About FieldTrace</div></div>
+        <div class="prow"><span class="plbl">Version</span><span class="pval">1.0 Demo</span></div>
+        <div class="prow"><span class="plbl">Build</span><span class="pval">Oct 2026</span></div>
+        <div class="prow"><span class="plbl">Platform</span><span class="pval">GitHub Pages</span></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bn active" id="bn-home"  onclick="go('home')">  <div class="bni">🏠</div><div class="bnl">Home</div></div>
+    <div class="bn"        id="bn-spray" onclick="go('spray')"> <div class="bni">💧</div><div class="bnl">Spray</div></div>
+    <div class="bn"        id="bn-harvest" onclick="go('harvest')"><div class="bni">🌾</div><div class="bnl">Harvest</div></div>
+    <div class="bn"        id="bn-gap"   onclick="go('gap')">   <div class="bni">✅</div><div class="bnl">GAP</div></div>
+    <div class="bn"        id="bn-crew"  onclick="go('crew')">  <div class="bni">👥</div><div class="bnl">Crew</div></div>
+  </div>
+
+</div><!-- /phone -->
+
+<div id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────
+var db = { spray: [], harvest: [], gap: [] };
+var ROOT = ['home','spray','harvest','gap','crew'];
+var ALL  = ['home','spray','spray-add','spray-success','spray-detail',
+            'harvest','harvest-add','harvest-success','harvest-detail',
+            'gap','gap-section','gap-add','gap-success',
+            'crew','notifications','settings'];
+var currentSprayDetail = null;
+var currentHarvestDetail = null;
+var varCount = 0;
+
+// ─── STORAGE ─────────────────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem('ft_db', JSON.stringify(db)); } catch(e){}
+}
+function load() {
+  try {
+    var raw = localStorage.getItem('ft_db');
+    if (raw) db = JSON.parse(raw);
+    else loadSampleData();
+  } catch(e) { loadSampleData(); }
+}
+
+// ─── SAMPLE DATA ─────────────────────────────────────────────────────
+function loadSampleData() {
+  db = {
+    spray: [
+      { id: 1, date: '2026-09-14', product: 'Roundup (Glyphosate)', epa: '524-445', rei: '4', block: 'Block 1 North', acres: '25', rate: '2 oz/acre', vol: '50 oz', applicator: 'Liam O\'Neill', temp: '78', wind: '6', dir: 'SE', notes: '' },
+      { id: 2, date: '2026-09-10', product: 'Captan 80WDG', epa: '10182-390', rei: '24', block: 'Block 2', acres: '18', rate: '1.5 lbs/acre', vol: '27 lbs', applicator: 'John Martinez', temp: '81', wind: '8', dir: 'S', notes: 'Morning application before heat' },
+      { id: 3, date: '2026-09-05', product: 'Kocide 3000 Copper', epa: '352-828', rei: '48', block: 'All Blocks', acres: '40', rate: '2 lbs/acre', vol: '80 lbs', applicator: 'Liam O\'Neill', temp: '76', wind: '5', dir: 'E', notes: '' },
+      { id: 4, date: '2026-08-30', product: 'Pristine WG', epa: '7969-305', rei: '12', block: 'Block 3 South', acres: '12', rate: '4 oz/acre', vol: '48 oz', applicator: 'Maria Lopez', temp: '84', wind: '7', dir: 'SW', notes: 'Fungicide rotation' },
+      { id: 5, date: '2026-08-22', product: 'Dithane M-45', epa: '707-188', rei: '24', block: 'Block 1', acres: '20', rate: '2 lbs/acre', vol: '40 lbs', applicator: 'Liam O\'Neill', temp: '79', wind: '6', dir: 'N', notes: '' }
+    ],
+    harvest: [
+      { id: 1, date: '2026-09-14', block: 'Block 1 & 2', pickers: '24', hours: '6.5', weather: 'Sunny 84°F', notes: '', varieties: [{name:'Paulk',lbs:3120,boxes:156,flats:0},{name:'Supreme',lbs:1700,boxes:85,flats:0}] },
+      { id: 2, date: '2026-09-13', block: 'Block 1', pickers: '20', hours: '6', weather: 'Sunny 82°F', notes: '', varieties: [{name:'Paulk',lbs:3960,boxes:198,flats:0}] },
+      { id: 3, date: '2026-09-12', block: 'Block 3', pickers: '16', hours: '5.5', weather: 'Partly cloudy 79°F', notes: '', varieties: [{name:'Granny Val',lbs:2140,boxes:107,flats:0}] },
+      { id: 4, date: '2026-09-11', block: 'All Blocks', pickers: '28', hours: '7', weather: 'Sunny 86°F', notes: 'Peak day', varieties: [{name:'Paulk',lbs:2000,boxes:100,flats:0},{name:'Supreme',lbs:2000,boxes:100,flats:0},{name:'Granny Val',lbs:1280,boxes:64,flats:0}] },
+      { id: 5, date: '2026-09-10', block: 'Block 2', pickers: '18', hours: '6', weather: 'Sunny 80°F', notes: '', varieties: [{name:'Supreme',lbs:3640,boxes:182,flats:0}] }
+    ],
+    gap: [
+      { id: 1, section: 'Pest Control', date: '2026-09-10', desc: 'ABC Pest Control — Block 1 inspection', by: 'Liam O\'Neill', result: 'Pass ✓', notes: 'Receipt on file' },
+      { id: 2, section: 'Pest Control', date: '2026-09-05', desc: 'Captan Spray — Block 2', by: 'John Martinez', result: 'Pass ✓', notes: '' },
+      { id: 3, section: 'Water Testing', date: '2026-08-15', desc: 'Water sample submitted to GA State Lab', by: 'Liam O\'Neill', result: 'Pass ✓', notes: 'Results on file' },
+      { id: 4, section: 'Equipment', date: '2026-09-01', desc: 'Sprayer calibration and inspection', by: 'Diego Reyes', result: 'Pass ✓', notes: 'All equipment in spec' },
+      { id: 5, section: 'Harvest GAP', date: '2026-09-10', desc: 'Pre-harvest sanitation check', by: 'Liam O\'Neill', result: 'Pass ✓', notes: '' }
+    ]
+  };
+  save();
+  refreshAll();
+  T('✅ Demo data loaded');
+}
+
+function clearAll() {
+  db = { spray: [], harvest: [], gap: [] };
+  save();
+  refreshAll();
+  T('🗑️ All records cleared');
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────
+function go(id) {
+  ALL.forEach(function(v) {
+    var el = document.getElementById('s-' + v);
+    if (el) el.classList.remove('active');
+  });
+  var el = document.getElementById('s-' + id);
+  if (el) {
+    el.classList.add('active');
+    var sc = el.querySelector('.scroll');
+    if (sc) sc.scrollTop = 0;
+  }
+  ROOT.forEach(function(v) {
+    var bn = document.getElementById('bn-' + v);
+    if (bn) bn.classList.remove('active');
+  });
+  var root = id.split('-')[0];
+  var bn = document.getElementById('bn-' + root);
+  if (bn) bn.classList.add('active');
+
+  // refresh relevant view
+  if (id === 'home')    refreshHome();
+  if (id === 'spray')   refreshSpray();
+  if (id === 'harvest') refreshHarvest();
+  if (id === 'gap')     refreshGAP();
+  if (id === 'spray-add') initSprayForm();
+  if (id === 'harvest-add') initHarvestForm();
+  if (id === 'gap-add') initGAPForm();
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────
+function T(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────
+function fmt(n) {
+  return Number(n).toLocaleString();
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  var parts = d.split('-');
+  var months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[parseInt(parts[1])] + ' ' + parseInt(parts[2]) + ', ' + parts[0];
+}
+function dotColor(i) {
+  var colors = ['var(--pink)','var(--amber)','var(--sage)','var(--sage2)','var(--blue)','var(--red)'];
+  return colors[i % colors.length];
+}
+function reiColor(h) {
+  var n = parseInt(h);
+  if (n <= 4)  return 'var(--sage)';
+  if (n <= 12) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+// ─── REFRESH HOME ────────────────────────────────────────────────────
+function refreshHome() {
+  var totalLbs = 0, totalBoxes = 0, totalFlats = 0;
+  db.harvest.forEach(function(r) {
+    r.varieties.forEach(function(v) {
+      totalLbs   += (+v.lbs   || 0);
+      totalBoxes += (+v.boxes || 0);
+      totalFlats += (+v.flats || 0);
+    });
+  });
+  var cooler = totalLbs - 36800;
+  if (cooler < 0) cooler = 0;
+  qs('home-kpi-lbs').textContent  = fmt(totalLbs);
+  qs('home-kpi-boxes').textContent = fmt(totalBoxes);
+  qs('home-kpi-gap').textContent   = db.gap.length;
+  qs('home-kpi-crew').textContent  = 24;
+  qs('home-flow-h').textContent    = fmt(totalLbs);
+  qs('home-flow-c').textContent    = fmt(cooler);
+}
+
+// ─── REFRESH SPRAY ───────────────────────────────────────────────────
+function refreshSpray() {
+  qs('spray-kpi-apps').textContent = db.spray.length;
+  var list = document.getElementById('spray-list');
+  if (!db.spray.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">💧</div><div class="empty-title">No spray records yet</div><div class="empty-sub">Tap + Add Record to log your first application</div></div>';
+    return;
+  }
+  list.innerHTML = db.spray.slice().reverse().map(function(r, i) {
+    var idx = db.spray.length - 1 - i;
+    return '<div class="spray-item" onclick="openSprayDetail('+idx+')">'
+      + '<div class="spray-dot" style="background:' + dotColor(i) + '"></div>'
+      + '<div class="spray-info"><div class="spray-prod">' + r.product + ' — ' + r.block + '</div>'
+      + '<div class="spray-det">' + fmtDate(r.date) + ' · ' + r.acres + ' acres · ' + r.applicator + '</div></div>'
+      + '<div class="spray-rei" style="color:' + reiColor(r.rei) + '">REI ' + r.rei + 'hr</div>'
+      + '</div>';
+  }).join('');
+}
+
+function openSprayDetail(idx) {
+  currentSprayDetail = idx;
+  var r = db.spray[idx];
+  document.getElementById('spray-detail-title').textContent = r.product + ' — ' + r.block;
+  var g = document.getElementById('spray-detail-grid');
+  g.innerHTML = dfield('Date', fmtDate(r.date)) + dfield('REI', r.rei + ' hours', reiColor(r.rei))
+    + dfield('Product', r.product) + dfield('EPA Reg #', r.epa)
+    + dfield('Block', r.block) + dfield('Acres', r.acres + ' acres')
+    + dfield('Rate', r.rate) + dfield('Total Volume', r.vol)
+    + dfield('Applicator', r.applicator) + dfield('Temp / Wind', r.temp + '°F · ' + r.wind + 'mph ' + r.dir);
+  go('spray-detail');
+}
+
+function dfield(lbl, val, color) {
+  return '<div class="detail-field"><div class="detail-label">'+lbl+'</div>'
+    + '<div class="detail-value"' + (color ? ' style="color:'+color+'"':'') + '>'+val+'</div></div>';
+}
+
+// ─── REFRESH HARVEST ─────────────────────────────────────────────────
+function refreshHarvest() {
+  var totalLbs = 0, totalBoxes = 0, totalFlats = 0;
+  var varMap = {};
+  db.harvest.forEach(function(r) {
+    r.varieties.forEach(function(v) {
+      var lbs   = +v.lbs   || 0;
+      var boxes = +v.boxes || 0;
+      var flats = +v.flats || 0;
+      totalLbs   += lbs;
+      totalBoxes += boxes;
+      totalFlats += flats;
+      if (!varMap[v.name]) varMap[v.name] = 0;
+      varMap[v.name] += lbs;
+    });
+  });
+  qs('harvest-kpi-lbs').textContent   = fmt(totalLbs);
+  qs('harvest-kpi-boxes').textContent = fmt(totalBoxes);
+  qs('harvest-kpi-flats').textContent = fmt(totalFlats);
+  qs('harvest-kpi-days').textContent  = db.harvest.length;
+
+  var list = document.getElementById('harvest-list');
+  if (!db.harvest.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🌾</div><div class="empty-title">No harvest records yet</div><div class="empty-sub">Tap + Add Record to log your first harvest day</div></div>';
+  } else {
+    list.innerHTML = '<div class="rlist">' + db.harvest.slice().reverse().map(function(r, i) {
+      var idx = db.harvest.length - 1 - i;
+      var dayLbs = r.varieties.reduce(function(s,v){ return s + (+v.lbs||0); }, 0);
+      var dayBoxes = r.varieties.reduce(function(s,v){ return s + (+v.boxes||0); }, 0);
+      var vnames = r.varieties.map(function(v){ return v.name; }).join(' + ');
+      return '<div class="rrow" onclick="openHarvestDetail('+idx+')">'
+        + '<div class="rdot" style="background:var(--sage)"></div>'
+        + '<div class="rm"><div class="rt">' + fmtDate(r.date) + ' — ' + r.block + '</div>'
+        + '<div class="rs">' + vnames + ' · ' + fmt(dayLbs) + ' lbs · ' + fmt(dayBoxes) + ' boxes · ' + r.pickers + ' pickers</div></div>'
+        + '<span class="badge bg">Done</span><div class="rarr">›</div></div>';
+    }).join('') + '</div>';
+  }
+
+  // variety bars
+  var varBar = document.getElementById('harvest-variety-bars');
+  var varNames = Object.keys(varMap);
+  if (!varNames.length) { varBar.innerHTML = '<div style="color:var(--t2);font-size:12px;padding:8px 0;">No data yet</div>'; return; }
+  var maxV = Math.max.apply(null, varNames.map(function(n){ return varMap[n]; }));
+  var colors = ['var(--sage)','var(--amber)','var(--blue)','var(--pink)','var(--sage2)'];
+  varBar.innerHTML = varNames.map(function(name, i) {
+    var pct = maxV ? (varMap[name] / maxV * 100) : 0;
+    return '<div class="mini-bar-row">'
+      + '<div class="mini-bar-lbl">' + name + '</div>'
+      + '<div class="mini-bar-track"><div class="mini-bar-fill" style="width:'+pct+'%;background:'+colors[i%colors.length]+'"></div></div>'
+      + '<div class="mini-bar-val" style="color:'+colors[i%colors.length]+'">' + fmt(varMap[name]) + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function openHarvestDetail(idx) {
+  currentHarvestDetail = idx;
+  var r = db.harvest[idx];
+  var dayLbs   = r.varieties.reduce(function(s,v){ return s+(+v.lbs||0); }, 0);
+  var dayBoxes = r.varieties.reduce(function(s,v){ return s+(+v.boxes||0); }, 0);
+  document.getElementById('harv-detail-title').textContent = fmtDate(r.date) + ' — ' + r.block;
+  var g = document.getElementById('harv-detail-grid');
+  g.innerHTML = '<div class="detail-field"><div class="detail-label">Total Lbs</div><div class="detail-value big" style="color:var(--sage)">' + fmt(dayLbs) + '</div></div>'
+    + '<div class="detail-field"><div class="detail-label">Boxes</div><div class="detail-value big">' + fmt(dayBoxes) + '</div></div>'
+    + dfield('Date', fmtDate(r.date)) + dfield('Pickers', r.pickers)
+    + dfield('Avg Hours', r.hours + ' hrs') + dfield('Weather', r.weather);
+  var vSec = document.getElementById('harv-detail-varieties');
+  vSec.innerHTML = '<div class="form-title">Varieties</div>'
+    + r.varieties.map(function(v) {
+      return '<div class="prow"><span class="plbl">'+v.name+'</span><span class="pval g">'+fmt(v.lbs)+' lbs · '+fmt(v.boxes)+' boxes</span></div>';
+    }).join('');
+  go('harvest-detail');
+}
+
+function deleteHarvest() {
+  if (currentHarvestDetail === null) return;
+  db.harvest.splice(currentHarvestDetail, 1);
+  save();
+  T('🗑️ Record deleted');
+  go('harvest');
+}
+
+// ─── REFRESH GAP ─────────────────────────────────────────────────────
+function refreshGAP() {
+  qs('gap-kpi-total').textContent = db.gap.length;
+}
+
+// ─── GAP SECTIONS ────────────────────────────────────────────────────
+var GAP_SECTIONS = {
+  'pest':    { title: 'Pest Control', icon: '🐛', filter: 'Pest Control', status: 'Pass ✓', meta: 'Last Sep 10 · Next Sep 24' },
+  'cooler':  { title: 'Cooler Temp', icon: '🌡️', filter: 'Cooler Temp', status: 'Warning', meta: 'Cooler A at 36°F vs 34°F set' },
+  'water':   { title: 'Water Testing', icon: '💧', filter: 'Water Testing', status: 'Pass ✓', meta: 'Last test Aug 15 · Lab results on file' },
+  'equip':   { title: 'Equipment', icon: '🔧', filter: 'Equipment', status: 'Pass ✓', meta: 'Last Sep 1 · Next Sep 20' },
+  'harvest': { title: 'Harvest GAP', icon: '🌾', filter: 'Harvest GAP', status: 'Pass ✓', meta: '3 records · Released' },
+  'visitor': { title: 'Visitor Log', icon: '📋', filter: 'Visitor Log', status: 'Pass ✓', meta: '2 records · Last Sep 8' }
+};
+
+ALL.filter(function(s){ return s.indexOf('gap-section-') === 0; }).forEach(function(id) {
+  // handled dynamically below
+});
+
+function goGapSection(key) {
+  var sec = GAP_SECTIONS[key];
+  if (!sec) return;
+  document.getElementById('gap-section-title').textContent = sec.title;
+  document.getElementById('gap-section-icon').textContent  = sec.icon;
+  document.getElementById('gap-section-status').textContent = sec.status;
+  document.getElementById('gap-section-meta').textContent   = sec.meta;
+  var records = db.gap.filter(function(r){ return r.section === sec.filter; });
+  var list = document.getElementById('gap-section-list');
+  if (!records.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">'+sec.icon+'</div><div class="empty-title">No records yet</div><div class="empty-sub">Tap + Add above to log a record for this section</div></div>';
+  } else {
+    list.innerHTML = records.map(function(r) {
+      var badgeCls = r.result === 'Pass ✓' ? 'bg' : (r.result === 'Fail' ? 'bp' : 'ba');
+      return '<div class="rrow"><div class="rdot" style="background:var(--sage)"></div>'
+        + '<div class="rm"><div class="rt">'+r.desc+'</div><div class="rs">'+fmtDate(r.date)+' · '+r.by+(r.notes ? ' · '+r.notes : '')+'</div></div>'
+        + '<span class="badge '+badgeCls+'">'+r.result+'</span></div>';
+    }).join('');
+  }
+  go('gap-section');
+}
+
+// patch go() to intercept gap-section-X
+var _go = go;
+go = function(id) {
+  if (id.indexOf('gap-section-') === 0) {
+    var key = id.replace('gap-section-', '');
+    goGapSection(key);
+    return;
+  }
+  _go(id);
+};
+
+// ─── SPRAY FORM ──────────────────────────────────────────────────────
+function initSprayForm() {
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('spray-f-date').value = today;
+  ['product','epa','rei','block','acres','rate','vol','applicator','temp','wind','notes'].forEach(function(f) {
+    var el = document.getElementById('spray-f-' + f);
+    if (el) { if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; }
+  });
+}
+
+function saveSpray() {
+  var product = document.getElementById('spray-f-product').value.trim();
+  if (!product) { T('⚠️ Product name is required'); return; }
+  var r = {
+    id: Date.now(),
+    date: document.getElementById('spray-f-date').value,
+    product: product,
+    epa:  document.getElementById('spray-f-epa').value,
+    rei:  document.getElementById('spray-f-rei').value || '0',
+    block: document.getElementById('spray-f-block').value,
+    acres: document.getElementById('spray-f-acres').value,
+    rate:  document.getElementById('spray-f-rate').value,
+    vol:   document.getElementById('spray-f-vol').value,
+    applicator: document.getElementById('spray-f-applicator').value || 'Liam O\'Neill',
+    temp:  document.getElementById('spray-f-temp').value,
+    wind:  document.getElementById('spray-f-wind').value,
+    dir:   document.getElementById('spray-f-dir').value,
+    notes: document.getElementById('spray-f-notes').value
+  };
+  db.spray.unshift(r);
+  save();
+  go('spray-success');
+}
+
+// ─── HARVEST FORM ────────────────────────────────────────────────────
+function initHarvestForm() {
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('harv-f-date').value = today;
+  ['block','pickers','hours','weather','notes'].forEach(function(f) {
+    var el = document.getElementById('harv-f-' + f);
+    if (el) el.value = '';
+  });
+  varCount = 0;
+  document.getElementById('variety-rows').innerHTML =
+    '<div class="var-block" data-var="0">'
+    + '<div class="var-block-hdr"><div class="var-block-title">Variety 1</div></div>'
+    + '<div class="field"><label>Variety Name</label><input type="text" class="var-name" placeholder="Paulk"></div>'
+    + '<div class="field-row"><div class="field"><label>Lbs</label><input type="number" class="var-lbs" placeholder="0"></div>'
+    + '<div class="field"><label>20lb Boxes</label><input type="number" class="var-boxes" placeholder="0"></div></div>'
+    + '<div class="field"><label>Flats</label><input type="number" class="var-flats" placeholder="0"></div></div>';
+}
+
+function addVariety() {
+  varCount++;
+  var n = varCount + 1;
+  var container = document.getElementById('variety-rows');
+  var block = document.createElement('div');
+  block.className = 'var-block';
+  block.setAttribute('data-var', varCount);
+  block.innerHTML =
+    '<div class="var-block-hdr">'
+    + '<div class="var-block-title">Variety ' + n + '</div>'
+    + '<button class="var-remove" onclick="this.closest(\'.var-block\').remove()" type="button">✕</button>'
+    + '</div>'
+    + '<div class="field"><label>Variety Name</label><input type="text" class="var-name" placeholder="e.g. Supreme"></div>'
+    + '<div class="field-row"><div class="field"><label>Lbs</label><input type="number" class="var-lbs" placeholder="0"></div>'
+    + '<div class="field"><label>20lb Boxes</label><input type="number" class="var-boxes" placeholder="0"></div></div>'
+    + '<div class="field"><label>Flats</label><input type="number" class="var-flats" placeholder="0"></div>';
+  container.appendChild(block);
+}
+
+function saveHarvest() {
+  var date = document.getElementById('harv-f-date').value;
+  var block = document.getElementById('harv-f-block').value.trim();
+  if (!date || !block) { T('⚠️ Date and block are required'); return; }
+  var varieties = [];
+  document.querySelectorAll('#variety-rows .var-block').forEach(function(el) {
+    var name = el.querySelector('.var-name').value.trim();
+    if (!name) return;
+    varieties.push({
+      name: name,
+      lbs:   +el.querySelector('.var-lbs').value   || 0,
+      boxes: +el.querySelector('.var-boxes').value  || 0,
+      flats: +el.querySelector('.var-flats').value  || 0
+    });
+  });
+  if (!varieties.length) { T('⚠️ Add at least one variety'); return; }
+  var r = {
+    id: Date.now(),
+    date: date,
+    block: block,
+    pickers: document.getElementById('harv-f-pickers').value,
+    hours:   document.getElementById('harv-f-hours').value,
+    weather: document.getElementById('harv-f-weather').value,
+    notes:   document.getElementById('harv-f-notes').value,
+    varieties: varieties
+  };
+  db.harvest.unshift(r);
+  save();
+  go('harvest-success');
+}
+
+// ─── GAP FORM ────────────────────────────────────────────────────────
+function initGAPForm() {
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('gap-f-date').value = today;
+  document.getElementById('gap-f-desc').value  = '';
+  document.getElementById('gap-f-by').value    = '';
+  document.getElementById('gap-f-notes').value = '';
+}
+
+function saveGAP() {
+  var desc = document.getElementById('gap-f-desc').value.trim();
+  if (!desc) { T('⚠️ Description is required'); return; }
+  var r = {
+    id: Date.now(),
+    section: document.getElementById('gap-f-section').value,
+    date:    document.getElementById('gap-f-date').value,
+    desc:    desc,
+    by:      document.getElementById('gap-f-by').value || 'Liam O\'Neill',
+    result:  document.getElementById('gap-f-result').value,
+    notes:   document.getElementById('gap-f-notes').value
+  };
+  db.gap.unshift(r);
+  save();
+  go('gap-success');
+}
+
+// ─── UTILITY ─────────────────────────────────────────────────────────
+function qs(id) { return document.getElementById(id); }
+
+function refreshAll() {
+  refreshHome();
+  refreshSpray();
+  refreshHarvest();
+  refreshGAP();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+(function() {
+  // Set today's date on date inputs
+  var today = new Date().toISOString().split('T')[0];
+  ['spray-f-date','harv-f-date','gap-f-date'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+  load();
+  refreshAll();
+})();
+</script>
+</body>
+</html>
