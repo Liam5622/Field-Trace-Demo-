@@ -64,19 +64,35 @@ input, select, textarea, button { font-family: inherit; }
 }
 
 /* ─── REAL PHONE: fill the screen ─── */
-@media (max-width: 430px) {
-  html, body { height: 100%; overflow: hidden; background: var(--bg); }
-  body { display: block; padding: 0; }
+@media (max-width: 500px) {
+  html { height: 100%; height: 100dvh; }
+  body {
+    display: block;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    background: var(--bg);
+    overflow: hidden;
+  }
   .phone {
     width: 100%;
     height: 100%;
     height: 100dvh;
     border-radius: 0;
     box-shadow: none;
+    /* flex column: statusbar | screens | bnav */
+    display: flex;
+    flex-direction: column;
   }
   .island { display: none; }
   .statusbar { display: none; }
-  .bnav { padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)); }
+  /* content area fills remaining space */
+  .screen { flex: 1; min-height: 0; }
+  /* bottom nav sticks at bottom with safe-area padding */
+  .bnav {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    flex-shrink: 0;
+  }
 }
 
 /* Dynamic Island */
@@ -133,9 +149,9 @@ input, select, textarea, button { font-family: inherit; }
 }
 
 /* ─── SCREENS ─── */
-.screen { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.screen { display: none; flex: 1; min-height: 0; overflow: hidden; flex-direction: column; }
 .screen.active { display: flex; }
-.scroll { flex: 1; overflow-y: auto; padding: 16px; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
 
 /* ─── APP BAR ─── */
 .appbar {
@@ -515,21 +531,24 @@ input, select, textarea, button { font-family: inherit; }
 
 /* ─── BOTTOM NAV ─── */
 .bnav {
-  background: var(--surf); border-top: 1px solid var(--b1);
-  display: flex; padding: 8px 0 26px;
+  background: var(--surf);
+  border-top: 1px solid rgba(124,184,122,0.2);
+  display: flex;
+  padding: 6px 0 10px;
   flex-shrink: 0;
+  /* always at the bottom of the phone flex column */
 }
 .bn {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; gap: 3px; cursor: pointer;
+  align-items: center; gap: 2px; cursor: pointer;
   padding: 4px 0;
   border-top: 2px solid transparent;
   transition: all .15s;
 }
 .bn.active { border-top-color: var(--sage); }
 .bn.active .bni, .bn.active .bnl { color: var(--sage); }
-.bni { font-size: 22px; color: var(--t2); transition: color .15s; }
-.bnl { font-size: 9px; color: var(--t2); font-weight: 700; letter-spacing: .3px; transition: color .15s; }
+.bni { font-size: 22px; color: rgba(255,255,255,0.5); transition: color .15s; }
+.bnl { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 700; letter-spacing: .3px; transition: color .15s; }
 
 /* ─── TOAST ─── */
 #toast {
